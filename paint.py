@@ -3,10 +3,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, \
 from PyQt5.QtGui import QIcon, QImage, QPainter, QPen, QPolygon, QColor
 from PyQt5.QtCore import Qt, QPoint, QRect
 import sys
-from PIL import ImageDraw, Image
-from sys import setrecursionlimit
-
-setrecursionlimit(999999999)
 
 
 class Window(QMainWindow):
