@@ -6,10 +6,10 @@ import sys
 from PIL import ImageDraw, Image
 from sys import setrecursionlimit
 
-setrecursionlimit(600000)
+setrecursionlimit(999999999)
 
 
-class Window(QMainWindow):  # создаём окно, в котором и будет находиться Paint
+class Window(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -51,8 +51,6 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
         self.polygon_n = 0
 
         self.lastPoint = QPoint()
-
-        # self.dt = False
 
         mainMenu = self.menuBar()  # кнопки для выбора цвета, размера кисти, сохранения файла
         fileMenu = mainMenu.addMenu('Файл')
@@ -104,7 +102,7 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
         typeMenu.addAction(eraser_a)
         eraser_a.triggered.connect(self.eraser)
         typeMenu.addAction(zalivka_a)
-        # zalivka_a.triggered.connect(self.zalivka)
+        zalivka_a.triggered.connect(self.zalivka)
         typeMenu.addAction(pipette_a)
         pipette_a.triggered.connect(self.pipette)
         typeMenu.addAction(line_a)
@@ -121,7 +119,7 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
         Painter.drawImage(self.p2, self.image)
         self.resize(self.image.width(), self.image.height())
 
-    def mousePressEvent(self, event):  # создаём функции, чтобы рисовать на холсте
+    def mousePressEvent(self, event):  # обрабатываем клик мышки
         if event.button() == Qt.LeftButton:
             if self.is_line:
                 self.line_pos.append(event.pos())
@@ -152,7 +150,7 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
             else:
                 self.input_text()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event):  # функция рисования при перемещении мышки
         if self.is_eraser:
             self.pen_color = self.color2
         else:
@@ -160,7 +158,7 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
         dp = QPainter(self.image)
         dp.setRenderHint(QPainter.Antialiasing)
         dp.setPen(QPen(self.pen_color, self.brushSize, Qt.SolidLine))
-        if self.drawing and (self.is_pen or self.is_eraser):
+        if self.drawing:
             dp.drawLine(self.p, event.pos())
             self.p = event.pos()
         self.update()
@@ -175,11 +173,13 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
             return
         self.image.save(file)
 
-    def open(self):  # открытие файла
+    def open(self):  # открытие файла в формата PNG или jpg
         img, hz = QFileDialog.getOpenFileName(self, 'Open Image', '', 'PNG (*.png);;JPEG(*.jpg)')
         try:
             s = open(img)
             self.image = QImage(img)
+            if self.image.height() <= 10 or self.image.width() <= 10:
+                self.clear()
         except Exception:
             pass
 
@@ -188,21 +188,21 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
         self.image = QImage('icons/white.png')
         self.update()
 
-    def set_color(self):
+    def set_color(self):  # смена цвета пера
         self.color1 = QColorDialog.getColor()
 
-    def set_color2(self):
+    def set_color2(self):  # смена цвета ластика
         self.color2 = QColorDialog.getColor()
 
-    def set_size(self):
+    def set_size(self):  # смена размера пера
         n, hz = QInputDialog.getInt(self, 'Size of pen', 'Размер:', 1, 1, 50, 1)
         if hz:
             self.brushSize = n
 
-    def onePx(self):
+    def onePx(self):  # смена размера пера на 1
         self.brushSize = 1
 
-    def input_text(self):
+    def input_text(self):  # рисование текста
         t, hz = QInputDialog.getText(self, 'text', 'Текст:')
         if hz:
             color_text = QColorDialog().getColor()
@@ -293,7 +293,7 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
         self.is_polygon = False
         self.is_pipette = False
 
-    def draw_line(self):
+    def draw_line(self):  # рисование прямой
         self.pen_color = self.color1
         dp = QPainter(self.image)
         dp.setRenderHint(QPainter.Antialiasing)
@@ -305,7 +305,7 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
             self.line_pos = []
         self.update()
 
-    def draw_rect(self):
+    def draw_rect(self):  # рисование прямоугольника
         dp = QPainter(self.image)
         dp.setPen(QPen(self.pen_color, self.brushSize, Qt.SolidLine))
         self.pen_color = self.color1
@@ -318,7 +318,7 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
             self.rect_pos = []
         self.update()
 
-    def draw_polygon(self):
+    def draw_polygon(self):  # рисование многоугольника
         dp = QPainter(self.image)
         dp.setPen(QPen(self.pen_color, self.brushSize, Qt.SolidLine))
         if len(self.polygon_pos) == 1:
@@ -335,38 +335,30 @@ class Window(QMainWindow):  # создаём окно, в котором и бу
             self.polygon_pos = []
         self.update()
 
-    def use_pipette(self, but):
+    def use_pipette(self, but):  # пипетка
         self.is_pipette = False
         self.is_pen = True
-        self.image.save('icons/pt.png')
-        img = Image.open("icons/pt.png")
-        pix = img.getpixel((self.x, self.y))
+        pix = QColor(self.image.pixel(self.x, self.y))
         if but == 1:
-            self.color1 = QColor(pix[0], pix[1], pix[2])
+            self.color1 = pix
         else:
-            self.color2 = QColor(pix[0], pix[1], pix[2])
+            self.color2 = pix
 
-    '''def use_zalivka(self):
-                # ЦВЕТ ЭТО КОРТЕЖ R,G,B
-        self.image.save('pt.png')
-        a = Image.open("pt.png")
-        pixel = a.load()
-        x, y = a.size
-        coord_pixel=a.getpixel((self.x, self.y))
-        color=(255,0,0)
-        #print(x, y)
-        for i in range(x):
-                for i1 in range(y):
-                    if pixel[i, i1] == pixel[coord_pixel[0], coord_pixel[1]]:
-                        pixel[i, i1] = color
-            #return image#a = zalivka(a, [self.x,self.y], (255,0,0))
-        #my()
-        a.save("pt.png")
-        self.image=QImage('pt.png')'''
+    def use_zalivka(self):  # заливка
+        x1 = self.image.width()
+        y1 = self.image.height()
+        pix = self.image.pixel(self.x, self.y)
+        if QColor(pix).rgb() != QColor(self.color1).rgb():
+            for i in range(x1):
+                for j in range(y1):
+                    p2 = self.image.pixel(i, j)
+                    if p2 == pix:
+                        self.image.setPixel(i, j, QColor(self.color1).rgb())
+        self.update()
 
 
-if __name__ == '__main__':  # создаём приложение
+if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = Window()
     window.show()
-app.exec()
+    app.exec()
